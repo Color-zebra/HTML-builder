@@ -15,17 +15,17 @@ process.on('exit', () => {
   rl.close;
 });
 
-const endlessInput = () => {
-  rl.question('Все что ты скажешь будет записано и использовано против тебя!\n', (date) => {
+const endlessInput = (text) => {
+  rl.question(text, (date) => {
     if (date === 'exit') {
       process.exit();
     } else {
       writeStream.write(date + '\n');
-      endlessInput();
+      endlessInput('Ожидается дальнейший ввод. Для остановки ввода нажите сочетание Ctrl + C, или наберите \'exit\'\n');
     }
   });
 };
 
-endlessInput();
+endlessInput('Все что ты скажешь будет записано и использовано против тебя!\n');
 
 
