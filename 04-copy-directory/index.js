@@ -1,39 +1,32 @@
-const fs = require('fs');
+const fsp = require('fs/promises');
 const path = require('path');
 
 
-const copyFiles = () => {
-  fs.mkdir(`${__dirname}/files-copy`, () => {
-    fs.readdir(`${__dirname}/files`, (error, data) => {
-      if (error) throw new Error('Чет сломалось');
-      data.forEach((item) => {
-        let fileCurrentPath = path.join(__dirname, 'files', item);
-        let fileTargetPath = path.join(__dirname, '/files-copy', item);
-        fs.copyFile(fileCurrentPath, fileTargetPath, () => {});
-      });
-    });
-  });
-};
+const pathTo = path.join(__dirname, 'files-copy');
+const pathFrom = path.join(__dirname, 'files');
 
-const copyFilesAfterCleaning = () => {
-  fs.readdir(path.join(__dirname, '/files-copy'), (error, data) => {
-    if (error) console.log('Something break...');
-    data.forEach((item) => {
-      let filePath = path.join(__dirname, '/files-copy', item);
-      fs.unlink(filePath, () => {});
-      fs.rmdir(path.join(__dirname, '/files-copy'), () => {copyFiles();});
-    });
-  });
-};
 
-const copyDir = () => {
-  fs.stat(`${__dirname}/files-copy`, (error) => {
-    if (error) {
-      copyFiles();
-    } else {
-      copyFilesAfterCleaning();
+const clearDirectory = async (pathTo) => {
+  try {
+    let filesForDelete = await fsp.readdir(pathTo);
+    for (let item of filesForDelete) {
+      await fsp.unlink(path.join(pathTo, item));
     }
-  });
+    await fsp.rmdir(pathTo);
+    console.log('Target directory is cleaned');
+  } catch (error) {
+    console.log('Target directory is clear');
+  }
 };
 
-copyDir();
+const copyDirectory = async (pathFrom, pathTo) => {
+  await clearDirectory(pathTo);
+  await fsp.mkdir(pathTo);
+  const filesForCopy = await fsp.readdir(pathFrom);
+  for (let file of filesForCopy) {
+    await fsp.copyFile(path.join(pathFrom, file), path.join(pathTo, file));
+  }
+  console.log('All files copied');
+};
+
+copyDirectory(pathFrom, pathTo);
