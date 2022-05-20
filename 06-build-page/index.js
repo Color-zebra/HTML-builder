@@ -2,25 +2,38 @@ const path = require('path');
 const fsp = require('fs/promises');
 
 
-async function clearDir(pathToProject, pathToAssets, pathToHTML, pathToStyles) {
-  try {
-    await fsp.unlink(pathToHTML);
-  } catch(error) {
-    console.log('Creating index.js');
-  }
 
-  try {
-    await fsp.unlink(pathToStyles);
-  } catch(error) {
-    console.log('Creating style.css');
+const clearDirectoryRecursive = async (pathTo) => {
+  let filesInFolder = await fsp.readdir(pathTo, {withFileTypes: true});
+  if (filesInFolder.length === 0) {
+    await fsp.rmdir(pathTo);
+    return;
   }
+  for (let item of filesInFolder) {
+    if (item.isFile()) {
+      await fsp.unlink(path.join(pathTo, item.name));
+    }
+    if (item.isDirectory()) {
+      await clearDirectoryRecursive(path.join(pathTo, item.name));
+    }
+  }
+  await fsp.rmdir(pathTo);
+  return;
+};
 
-  try {
-    await fsp.rmdir(pathToProject);
-  } catch {
-    console.log('Creating project-dist directory');
+const copyDirectoryRecursive = async (pathFrom, pathTo) => {
+  let filesInFolder = await fsp.readdir(pathFrom, {withFileTypes: true});
+  await fsp.mkdir(pathTo);
+  for (let item of filesInFolder) {
+    if (item.isFile()) {
+      await fsp.copyFile(path.join(pathFrom, item.name), path.join(pathTo, item.name));
+    }
+    if (item.isDirectory()) {
+      await copyDirectoryRecursive(path.join(pathFrom, item.name), path.join(pathTo, item.name));
+    }
   }
-}
+  return;
+};
 
 const createComponents = async (pathFromHTML) => {
   const components = {};
@@ -59,17 +72,40 @@ const createIndexHTML = async () => {
   const pathToProject = path.join(__dirname, 'project-dist');
   const pathToAssets = path.join(pathToProject, 'assets');
   const pathToHTML = path.join(pathToProject, 'index.html');
-  const pathToStyles = path.join(pathToProject, 'styles.css');
+  const pathToStyles = path.join(pathToProject, 'style.css');
   const pathToTemplate = path.join(__dirname, 'template.html');
   const pathFromAssets = path.join(__dirname, 'assets');
   const pathFromHTML = path.join(__dirname, 'components');
   const pathFromStyles = path.join(__dirname, 'styles');
 
-  await clearDir(pathToProject, pathToAssets, pathToHTML, pathToStyles);
+  
+  try {
+    await clearDirectoryRecursive(pathToProject);
+    console.log('Creating start');
+  } catch (error) {
+    console.log('Creating start');
+  }
+
   await fsp.mkdir(pathToProject);
-  await fsp.copyFile(pathToTemplate, pathToHTML);
-  await changeTemplate(pathToHTML, await createComponents(pathFromHTML));
-  await createStyleBundl(pathFromStyles, pathToStyles);
+
+  try {
+    await fsp.copyFile(pathToTemplate, pathToHTML);
+    await changeTemplate(pathToHTML, await createComponents(pathFromHTML));
+  } catch (error) {
+    console.log('something wrong with input html files');
+  }
+
+  try {
+    await createStyleBundl(pathFromStyles, pathToStyles);
+  } catch (error) {
+    console.log('something wrong with input css files');
+  }
+
+  try {
+    await copyDirectoryRecursive(pathFromAssets, pathToAssets);
+  } catch (error) {
+    console.log('something wrong with assets directory');
+  }
 };
 
 createIndexHTML();
