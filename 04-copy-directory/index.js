@@ -6,27 +6,52 @@ const pathTo = path.join(__dirname, 'files-copy');
 const pathFrom = path.join(__dirname, 'files');
 
 
-const clearDirectory = async (pathTo) => {
-  try {
-    let filesForDelete = await fsp.readdir(pathTo);
-    for (let item of filesForDelete) {
-      await fsp.unlink(path.join(pathTo, item));
-    }
+const clearDirectoryRecursive = async (pathTo) => {
+  let filesInFolder = await fsp.readdir(pathTo, {withFileTypes: true});
+  if (filesInFolder.length === 0) {
     await fsp.rmdir(pathTo);
-    console.log('Target directory is cleaned');
-  } catch (error) {
-    console.log('Target directory is clear');
+    return;
   }
+  for (let item of filesInFolder) {
+    if (item.isFile()) {
+      await fsp.unlink(path.join(pathTo, item.name));
+    }
+    if (item.isDirectory()) {
+      await clearDirectoryRecursive(path.join(pathTo, item.name));
+    }
+  }
+  await fsp.rmdir(pathTo);
+  return;
 };
 
-const copyDirectory = async (pathFrom, pathTo) => {
-  await clearDirectory(pathTo);
+const copyDirectoryRecursive = async (pathFrom, pathTo) => {
+  let filesInFolder = await fsp.readdir(pathFrom, {withFileTypes: true});
   await fsp.mkdir(pathTo);
-  const filesForCopy = await fsp.readdir(pathFrom);
-  for (let file of filesForCopy) {
-    await fsp.copyFile(path.join(pathFrom, file), path.join(pathTo, file));
+  for (let item of filesInFolder) {
+    if (item.isFile()) {
+      await fsp.copyFile(path.join(pathFrom, item.name), path.join(pathTo, item.name));
+    }
+    if (item.isDirectory()) {
+      await copyDirectoryRecursive(path.join(pathFrom, item.name), path.join(pathTo, item.name));
+    }
   }
-  console.log('All files copied');
+  return;
 };
 
-copyDirectory(pathFrom, pathTo);
+const copy = async (pathFrom, pathTo) => {
+  try {
+    await clearDirectoryRecursive(pathTo);
+    console.log('Copying start');
+  } catch (error) {
+    console.log('Copying start');
+  }
+  try {
+    await copyDirectoryRecursive(pathFrom, pathTo);
+    console.log('Copying succesfull');
+  } catch (error) {
+    console.log('Something wrong with directory which copying');
+  }
+  
+};
+
+copy(pathFrom, pathTo);

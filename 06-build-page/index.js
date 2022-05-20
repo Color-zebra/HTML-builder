@@ -1,71 +1,75 @@
-//const fs = require('fs');
 const path = require('path');
 const fsp = require('fs/promises');
 
 
-const components = {};
+async function clearDir(pathToProject, pathToAssets, pathToHTML, pathToStyles) {
+  try {
+    await fsp.unlink(pathToHTML);
+  } catch(error) {
+    console.log('Creating index.js');
+  }
 
+  try {
+    await fsp.unlink(pathToStyles);
+  } catch(error) {
+    console.log('Creating style.css');
+  }
 
-async function createComponents() {
-  let data = await fsp.readdir(path.join(__dirname, 'components'));
-  //console.log(data);
-  //console.log(Array.isArray(data));
-  for (let i = 0; i < data.length; i++) {
-    if (path.extname(data[i]) === '.html') {
-      //console.log('Создаем шаблон для:', data[i]);
-      components[`${data[i].split('.')[0]}`] = await fsp.readFile(path.join(__dirname, 'components', data[i]), 'utf8');
-      //console.log('Шаблон создан', components[`${data[i].split('.')[0]}`]);
-    }
+  try {
+    await fsp.rmdir(pathToProject);
+  } catch {
+    console.log('Creating project-dist directory');
   }
 }
 
-async function changeTemplate(comp) {
-  let htmlText = await fsp.readFile('./06-build-page/project-dist/index.html');
-  htmlText = htmlText.toString();
+const createComponents = async (pathFromHTML) => {
+  const components = {};
+  let data = await fsp.readdir(pathFromHTML, {withFileTypes: true});
+  for (let item of data) {
+    if (path.extname(item.name) === '.html' && item.isFile()) {
+      let name = item.name.split('.')[0];
+      components[`${name}`] = await fsp.readFile(path.join(pathFromHTML, item.name), 'utf8');
+    }
+  }
+  return components;
+};
+
+const changeTemplate = async (pathToHTML, comp) => {
+  let htmlText = await fsp.readFile(pathToHTML, 'utf8');
   for (let key of Object.keys(comp)) {
     let reg = RegExp(`{{${key}}}`);
     htmlText = htmlText.replace(reg, comp[`${key}`]);
   }
-  await fsp.writeFile('./06-build-page/project-dist/index.html', htmlText);
-}
+  await fsp.writeFile(pathToHTML, htmlText);
+};
 
-async function clearDir() {
-  try {
-    await fsp.unlink('./06-build-page/project-dist/index.html');
-  } catch(error) {
-    console.log('Существующий index.js не найден. Создаем новый.');
+const createStyleBundl = async (pathFromStyles, pathToStyles) => {
+  let result = '';
+  let filesArray = await fsp.readdir(path.join(pathFromStyles), {withFileTypes: true});
+  filesArray = filesArray.filter(item => path.extname(item.name) === '.css' && item.isFile());
+  for (let item of filesArray) {
+    result += await fsp.readFile(path.join(pathFromStyles, item.name));
   }
+  fsp.writeFile(pathToStyles, result);
+};
 
-  try {
-    await fsp.rmdir('./06-build-page/project-dist/');
-  } catch {
-    console.log('Существующая папка project-dist не найдена. Создаем новую.');
-  }
-}
 
-async function createIndexHTML() {
-/*   try {
-    await fsp.unlink('./06-build-page/project-dist/index.html');
-  } catch(error) {
-    console.log('Существующий index.js не найден. Создаем новый.');
-  }
+const createIndexHTML = async () => {
 
-  try {
-    await fsp.rmdir('./06-build-page/project-dist/');
-  } catch {
-    console.log('Существующая папка project-dist не найдена. Создаем новую.');
-  } */
+  const pathToProject = path.join(__dirname, 'project-dist');
+  const pathToAssets = path.join(pathToProject, 'assets');
+  const pathToHTML = path.join(pathToProject, 'index.html');
+  const pathToStyles = path.join(pathToProject, 'styles.css');
+  const pathToTemplate = path.join(__dirname, 'template.html');
+  const pathFromAssets = path.join(__dirname, 'assets');
+  const pathFromHTML = path.join(__dirname, 'components');
+  const pathFromStyles = path.join(__dirname, 'styles');
 
-  await clearDir();
-
-  fsp.mkdir(path.join(__dirname, 'project-dist'))
-    .then(fsp.copyFile('./06-build-page/template.html', './06-build-page/project-dist/index.html'))
-    .then(() => {
-      createComponents()
-        .then(() => changeTemplate(components))
-        .catch(error => console.log(error));
-    })
-    .catch(error => console.log(error));
-}
+  await clearDir(pathToProject, pathToAssets, pathToHTML, pathToStyles);
+  await fsp.mkdir(pathToProject);
+  await fsp.copyFile(pathToTemplate, pathToHTML);
+  await changeTemplate(pathToHTML, await createComponents(pathFromHTML));
+  await createStyleBundl(pathFromStyles, pathToStyles);
+};
 
 createIndexHTML();
