@@ -1,7 +1,9 @@
 const path = require('path');
 const fsp = require('fs/promises');
 
+
 const pathTo = path.join(__dirname, 'secret-folder');
+
 
 const filesInFolder = async (pathTo) => {
   let allFilesInFolder = await fsp.readdir(pathTo, {withFileTypes: true});

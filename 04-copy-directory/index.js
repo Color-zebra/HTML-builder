@@ -51,7 +51,6 @@ const copy = async (pathFrom, pathTo) => {
   } catch (error) {
     console.log('Something wrong with directory which copying');
   }
-  
 };
 
 copy(pathFrom, pathTo);

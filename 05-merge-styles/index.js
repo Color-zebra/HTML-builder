@@ -1,6 +1,7 @@
 const fsp = require('fs/promises');
 const path = require('path');
 
+
 const pathFrom = path.join(__dirname, 'styles');
 const pathTo = path.join(__dirname, 'project-dist', 'bundle.css');
 

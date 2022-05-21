@@ -1,6 +1,7 @@
 const readline = require('readline');
 const fs = require('fs');
 
+
 const writeStream = fs.createWriteStream('./02-write-file/result.txt');
 const rl = readline.createInterface(
   {
@@ -8,6 +9,7 @@ const rl = readline.createInterface(
     output: process.stdout
   }
 );
+
 
 process.on('exit', () => {
   console.log('Успехов в учебе! Пока!');

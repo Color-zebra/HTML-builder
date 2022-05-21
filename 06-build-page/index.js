@@ -2,7 +2,6 @@ const path = require('path');
 const fsp = require('fs/promises');
 
 
-
 const clearDirectoryRecursive = async (pathTo) => {
   let filesInFolder = await fsp.readdir(pathTo, {withFileTypes: true});
   if (filesInFolder.length === 0) {
