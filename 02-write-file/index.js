@@ -19,7 +19,7 @@ process.on('exit', () => {
 
 const endlessInput = (text) => {
   rl.question(text, (date) => {
-    if (date === 'exit') {
+    if (date.trim() === 'exit') {
       process.exit();
     } else {
       writeStream.write(date + '\n');
