@@ -1,5 +1,6 @@
 const readline = require('readline');
 const fs = require('fs');
+const path = require('path');
 
 
 const writeStream = fs.createWriteStream('./02-write-file/result.txt');
@@ -17,12 +18,22 @@ process.on('exit', () => {
   rl.close;
 });
 
+
+
 const endlessInput = (text) => {
   rl.question(text, (date) => {
     if (date.trim() === 'exit') {
       process.exit();
     } else {
       writeStream.write(date + '\n');
+      fs.appendFile(
+        path.join(__dirname, 'result.txt'),
+        '',
+        'utf8',
+        (err) => {
+          if (err) throw err;
+        },
+      );
       endlessInput('Ожидается дальнейший ввод. Для остановки ввода нажите сочетание Ctrl + C, или наберите \'exit\'\n');
     }
   });
